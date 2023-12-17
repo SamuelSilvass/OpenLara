@@ -18,17 +18,20 @@ struct Collision {
     Collision() : side(NONE) {}
 
     Collision(Controller *controller, int roomIndex, vec3 &pos, const vec3 &offset, const vec3 &velocity, float radius, float angle, int minHeight, int maxHeight, int maxAscent, int maxDescent) {
+        // Considera a orientação do ângulo com base na velocidade
         if (velocity.x > 0.0f || velocity.z > 0.0f)
             angle = normalizeAngle(PI2 + vec2(velocity.z, velocity.x).angle());
+        
+        // Atualiza a posição com base na velocidade
         pos += velocity;
 
         int q = angleQuadrant(angle, 0.25f);
 
         const vec2 v[] = {
-            vec2( -radius,  radius ),
-            vec2(  radius,  radius ),
-            vec2(  radius, -radius ),
-            vec2( -radius, -radius ),
+            vec2(-radius, radius),
+            vec2(radius, radius),
+            vec2(radius, -radius),
+            vec2(-radius, -radius),
         };
 
         const vec2 &l = v[q], &r = v[(q + 1) % 4];
@@ -41,8 +44,10 @@ struct Collision {
 
         int height = maxHeight - minHeight;
 
+        // Obtém informações do piso
         getFloor(controller->level, roomIndex, vec3(pos.x, hpos.y, pos.z));
 
+        // Verifica colisão frontal
         if (checkHeight(controller, roomIndex, hpos, vec2(0.0f), height, 0xFFFFFF, 0xFFFFFF, side = NONE)) {
             pos.x -= velocity.x;
             pos.z -= velocity.z;
@@ -50,6 +55,7 @@ struct Collision {
             return;
         }
 
+        // Verifica colisão superior
         float hCell = info[NONE].ceiling - (hpos.y - maxHeight);
         if (hCell > 0) {
             if (hCell > 128) {
@@ -58,27 +64,34 @@ struct Collision {
                 side = FRONT;
             } else {
                 pos.y = info[NONE].ceiling + maxHeight - offset.y;
-                side  = TOP;
+                side = TOP;
             }
         }
 
+        // Verifica colisão inferior
         float hFloor = info[NONE].floor - (hpos.y + minHeight);
         if (hFloor < 0 && hFloor > -256) {
             pos.y = info[NONE].floor - minHeight - offset.y;
-            side  = BOTTOM;
+            side = BOTTOM;
         }
 
+        // Verifica colisão frontal e ajusta a posição
         if (checkHeight(controller, roomIndex, hpos, f, height, maxAscent, maxDescent, FRONT)) {
             d = vec2(-velocity.x, -velocity.z);
             q ^= 1;
             d[q] = getOffset(p[q] + f[q], p[q]);
-        } else if (checkHeight(controller, roomIndex, hpos, l, height, maxAscent, maxDescent, LEFT)) {
+        }
+        // Verifica colisão à esquerda e ajusta a posição
+        else if (checkHeight(controller, roomIndex, hpos, l, height, maxAscent, maxDescent, LEFT)) {
             d[q] = getOffset(p[q] + l[q], p[q] + f[q]);
-        } else if (checkHeight(controller, roomIndex, hpos, r, height, maxAscent, maxDescent, RIGHT)) {
+        }
+        // Verifica colisão à direita e ajusta a posição
+        else if (checkHeight(controller, roomIndex, hpos, r, height, maxAscent, maxDescent, RIGHT)) {
             d[q] = getOffset(p[q] + r[q], p[q] + f[q]);
         } else
             return;
 
+        // Atualiza a posição com base no deslocamento calculado
         pos += vec3(d.x, 0.0f, d.y);
     }
 
@@ -87,14 +100,15 @@ struct Collision {
         controller->getFloorInfo(roomIndex, pos + vec3(offset.x, 0.0f, offset.y), info);
 
         Info &inf = this->info[side];
-        inf.room      = info.roomNext != TR::NO_ROOM ? info.roomNext : roomIndex;
+        inf.room = info.roomNext != TR::NO_ROOM ? info.roomNext : roomIndex;
         inf.roomAbove = info.roomAbove;
         inf.roomBelow = info.roomBelow;
-        inf.floor     = info.floor;
-        inf.ceiling   = info.ceiling;
-        inf.climb     = info.climb;
+        inf.floor = info.floor;
+        inf.ceiling = info.ceiling;
+        inf.climb = info.climb;
 
-        if ((info.ceiling == info.floor) ||  (info.floor - info.ceiling < height) || (pos.y - info.floor > maxAscent) || (info.floor - pos.y > maxDescent) || (info.ceiling > pos.y) ||
+        // Lógica de detecção de colisão
+        if ((info.ceiling == info.floor) || (info.floor - info.ceiling < height) || (pos.y - info.floor > maxAscent) || (info.floor - pos.y > maxDescent) || (info.ceiling > pos.y) ||
             (maxAscent == maxDescent && (maxAscent <= 256 + 128) && (abs(info.slantX) > 2 || abs(info.slantZ) > 2))) {
             this->side = side;
             return true;
@@ -104,7 +118,7 @@ struct Collision {
 
     inline float getOffset(float from, float to) {
         int a = int(from) / 1024;
-        int b = int(to)   / 1024;
+        int b = int(to) / 1024;
 
         from -= float(a * 1024.0f);
 
