@@ -6,11 +6,11 @@
 #include "sprite.h"
 
 struct Character : Controller {
-    float   health;
-    float   tilt;
-    quat    rotHead, rotChest;
+    float health;
+    float tilt;
+    quat rotHead, rotChest;
 
-    enum Stand { 
+    enum Stand {
         STAND_AIR,
         STAND_GROUND,
         STAND_SLIDE,
@@ -18,58 +18,58 @@ struct Character : Controller {
         STAND_UNDERWATER,
         STAND_ONWATER,
         STAND_WADE
-    }       stand;
+    } stand;
 
-    int     input, lastInput;
+    int input, lastInput;
 
-    enum Key {  
-        LEFT        = 1 << 1, 
-        RIGHT       = 1 << 2, 
-        FORTH       = 1 << 3, 
-        BACK        = 1 << 4, 
-        JUMP        = 1 << 5,
-        WALK        = 1 << 6,
-        ACTION      = 1 << 7,
-        WEAPON      = 1 << 8,
-        LOOK        = 1 << 9,
-        DEATH       = 1 << 10
+    enum Key {
+        LEFT = 1 << 1,
+        RIGHT = 1 << 2,
+        FORTH = 1 << 3,
+        BACK = 1 << 4,
+        JUMP = 1 << 5,
+        WALK = 1 << 6,
+        ACTION = 1 << 7,
+        WEAPON = 1 << 8,
+        LOOK = 1 << 9,
+        DEATH = 1 << 10
     };
 
-    Controller  *viewTarget;
-    int         jointChest;
-    int         jointHead;
-    vec4        rangeChest;
-    vec4        rangeHead;
+    Controller *viewTarget;
+    int jointChest;
+    int jointHead;
+    vec4 rangeChest;
+    vec4 rangeHead;
 
-    vec3    velocity;
-    float   angleExt;
-    float   speed;
-    float   lookAtSpeed;
-    int     stepHeight;
-    int     dropHeight;
+    vec3 velocity;
+    float angleExt;
+    float speed;
+    float lookAtSpeed;
+    int stepHeight;
+    int dropHeight;
 
-    int     zone;
-    int     box;
+    int zone;
+    int box;
 
-    bool    burn;
-    bool    flying;
-    bool    fullChestRotation;
+    bool burn;
+    bool flying;
+    bool fullChestRotation;
 
     Collision collision;
 
     Character(IGame *game, int entity, float health) : Controller(game, entity), health(health), tilt(0.0f), stand(STAND_GROUND), lastInput(0), viewTarget(NULL), jointChest(-1), jointHead(-1), velocity(0.0f), angleExt(0.0f), speed(0.0f) {
-        stepHeight =  256;
+        stepHeight = 256;
         dropHeight = -256;
 
         lookAtSpeed = 8.0f;
 
         rangeChest = vec4(-0.80f, 0.80f, -0.75f, 0.75f) * PI;
-        rangeHead  = vec4(-0.25f, 0.25f, -0.50f, 0.50f) * PI;
+        rangeHead = vec4(-0.25f, 0.25f, -0.50f, 0.50f) * PI;
         animation.initOverrides();
 
-        rotHead  = rotChest = quat(0, 0, 0, 1);
+        rotHead = rotChest = quat(0, 0, 0, 1);
 
-        burn   = false;
+        burn = false;
         flying = getEntity().type == TR::Entity::ENEMY_BAT;
         fullChestRotation = false;
         updateZone();
@@ -81,13 +81,13 @@ struct Character : Controller {
 
     virtual int getRoomIndex() const {
         int index = Controller::getRoomIndex();
-        
+
         if (level->isCutsceneLevel())
             return index;
         return index;
     }
 
-    virtual TR::Room& getLightRoom() {
+    virtual TR::Room &getLightRoom() {
         if (stand == STAND_ONWATER) {
             int16 rIndex = getRoomIndex();
             TR::Room::Sector *sector = level->getSector(rIndex, pos);
@@ -105,12 +105,12 @@ struct Character : Controller {
         TR::Room::Sector &s = level->getSector(getRoomIndex(), int(pos.x), int(pos.z), dx, dz);
         if (s.boxIndex == TR::NO_BOX)
             return false;
-        box  = s.boxIndex;
+        box = s.boxIndex;
         zone = getZones()[box];
         return true;
     }
 
-    uint16* getZones() {
+    uint16 *getZones() {
         TR::Zone &zones = level->zones[level->state.flags.flipped];
         return (flying || stand == STAND_UNDERWATER || stand == STAND_ONWATER) ? zones.fly : (stepHeight == 256 ? zones.ground1 : zones.ground2);
     }
@@ -130,21 +130,21 @@ struct Character : Controller {
         health = max(0.0f, health - damage);
     }
 
-    virtual void  updateVelocity()      {}
-    virtual void  updatePosition()      {}
-    virtual Stand getStand()            { return stand; }
-    virtual int   getHeight()           { return 0; }
-    virtual int   getStateAir()         { return state; }
-    virtual int   getStateGround()      { return state; }
-    virtual int   getStateSlide()       { return state; }
-    virtual int   getStateHang()        { return state; }
-    virtual int   getStateUnderwater()  { return state; }
-    virtual int   getStateOnwater()     { return state; }
-    virtual int   getStateWade()        { return state; }
-    virtual int   getStateDeath()       { return state; }
-    virtual int   getStateDefault()     { return state; }
-    virtual int   getInput()            { return health <= 0 ? DEATH : 0; }
-    virtual bool  useHeadAnimation()    { return false; }
+    virtual void updateVelocity() {}
+    virtual void updatePosition() {}
+    virtual Stand getStand() { return stand; }
+    virtual int getHeight() { return 0; }
+    virtual int getStateAir() { return state; }
+    virtual int getStateGround() { return state; }
+    virtual int getStateSlide() { return state; }
+    virtual int getStateHang() { return state; }
+    virtual int getStateUnderwater() { return state; }
+    virtual int getStateOnwater() { return state; }
+    virtual int getStateWade() { return state; }
+    virtual int getStateDeath() { return state; }
+    virtual int getStateDefault() { return state; }
+    virtual int getInput() { return health <= 0 ? DEATH : 0; }
+    virtual bool useHeadAnimation() { return false; }
 
     int getNextState() {
         if (input & DEATH) {
@@ -157,13 +157,20 @@ struct Character : Controller {
         }
 
         switch (stand) {
-            case STAND_AIR        : return getStateAir();
-            case STAND_GROUND     : return getStateGround();
-            case STAND_SLIDE      : return getStateSlide();
-            case STAND_HANG       : return getStateHang();
-            case STAND_UNDERWATER : return getStateUnderwater();
-            case STAND_ONWATER    : return getStateOnwater();
-            case STAND_WADE       : return getStateWade();
+        case STAND_AIR:
+            return getStateAir();
+        case STAND_GROUND:
+            return getStateGround();
+        case STAND_SLIDE:
+            return getStateSlide();
+        case STAND_HANG:
+            return getStateHang();
+        case STAND_UNDERWATER:
+            return getStateUnderwater();
+        case STAND_ONWATER:
+            return getStateOnwater();
+        case STAND_WADE:
+            return getStateWade();
         }
         return animation.state;
     }
@@ -184,14 +191,19 @@ struct Character : Controller {
     }
 
     virtual void updateTilt(bool active, float tiltSpeed, float tiltMax) {
-    // calculate turning tilt
+        // calculate turning tilt
         if (active && (input & (LEFT | RIGHT)) && (tilt == 0.0f || (tilt < 0.0f && (input & LEFT)) || (tilt > 0.0f && (input & RIGHT)))) {
-            if (input & LEFT)  tilt -= tiltSpeed;
-            if (input & RIGHT) tilt += tiltSpeed;
+            if (input & LEFT)
+                tilt -= tiltSpeed;
+            if (input & RIGHT)
+                tilt += tiltSpeed;
             tilt = clamp(tilt, -tiltMax, +tiltMax);
-        } else {
-            if (tilt > 0.0f) tilt = max(0.0f, tilt - tiltSpeed);
-            if (tilt < 0.0f) tilt = min(0.0f, tilt + tiltSpeed);
+        }
+        else {
+            if (tilt > 0.0f)
+                tilt = max(0.0f, tilt - tiltSpeed);
+            if (tilt < 0.0f)
+                tilt = min(0.0f, tilt + tiltSpeed);
         }
         angle.z = tilt;
     }
@@ -229,7 +241,7 @@ struct Character : Controller {
         stand = STAND_AIR;
     }
 
-    vec3 getViewPoint() { // TOOD: remove this
+    vec3 getViewPoint() { // TODO: remove this
         return getJoint(jointChest).pos;
     }
 
@@ -246,7 +258,6 @@ struct Character : Controller {
         lookAtPos(target ? &t : NULL);
     }
 
-
     void lookAtPos(const vec3 *t = NULL) {
         float speed = lookAtSpeed * Core::deltaTime;
         quat rot;
@@ -257,7 +268,8 @@ struct Character : Controller {
                     rotChest = rotChest.slerp(rot, speed);
                 else
                     rotChest = rotChest.slerp(quat(0, 0, 0, 1).slerp(rot, 0.5f), speed);
-            } else 
+            }
+            else
                 rotChest = rotChest.slerp(quat(0, 0, 0, 1), speed);
             animation.overrides[jointChest] = rotChest * animation.overrides[jointChest];
         }
@@ -282,7 +294,7 @@ struct Character : Controller {
     }
 
     void addBlood(const vec3 &sprPos, const vec3 &sprVel) {
-        Sprite *sprite = (Sprite*)game->addEntity(TR::Entity::BLOOD, getRoomIndex(), sprPos, 0);
+        Sprite *sprite = (Sprite *)game->addEntity(TR::Entity::BLOOD, getRoomIndex(), sprPos, 0);
         if (sprite)
             sprite->velocity = sprVel;
     }
@@ -294,7 +306,7 @@ struct Character : Controller {
 
     void addBloodSpikes() {
         float ang = randf() * PI * 2.0f;
-        addBlood(64.0f,  512.0f, vec3(sinf(ang), 0.0f, cosf(ang)) * 20.0f);
+        addBlood(64.0f, 512.0f, vec3(sinf(ang), 0.0f, cosf(ang)) * 20.0f);
     }
 
     void addBloodBlade() {
@@ -313,15 +325,15 @@ struct Character : Controller {
         flags.invisible = true;
         if (!environment) {
             uint32 opt = OPT_CUBEMAP | OPT_TARGET;
-            #ifdef USE_CUBEMAP_MIPS
-                opt |= OPT_MIPMAPS;
-            #endif
+#ifdef USE_CUBEMAP_MIPS
+            opt |= OPT_MIPMAPS;
+#endif
             environment = new Texture(256, 256, 1, FMT_RGB16, opt);
         }
         game->renderEnvironment(getRoomIndex(), pos - vec3(0.0f, 384.0f, 0.0f), &environment);
-        #ifdef USE_CUBEMAP_MIPS
-            environment->generateMipMap();
-        #endif
+#ifdef USE_CUBEMAP_MIPS
+        environment->generateMipMap();
+#endif
         flags.invisible = false;
 
         Core::endFrame();
